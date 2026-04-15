@@ -8,7 +8,6 @@ def show_question(question_num, case, total, lives, score):
     print("==========================================================================")
     print(f"Вопрос: {question_num}/{total}   |   Жизни: {lives}   |   Счет: {score}")
     print("==========================================================================")
-
     print("\nСообщение:")
     print(case["text"])
 

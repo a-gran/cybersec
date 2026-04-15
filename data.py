@@ -508,6 +508,6 @@ data = [
 COUNT = 20
 cases = random.sample(data, COUNT)
 
-# quontity = len(cases)
-# print(f'Количество случаев: {quontity}')
-# print(cases[0])
+print(f'Всего случаев: {len(data)}')
+print(f'Количество случаев: {len(cases)}')
+print(cases[0])
