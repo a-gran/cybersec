@@ -1,104 +1,64 @@
-import data
+# Модуль random нужен для перемешивания вопросов в случайном порядке
 import random
 
-LIVES = 3
-POINTS = 10
+# Импортируем модуль data — там хранится список всех вопросов (сообщений для анализа)
+import data
+# Берём начальное количество жизней из config
+from config import LIVES
+# Берём функцию показа правил из модуля rules
+from rules import show_rules
+# Берём функции показа вопроса и получения ответа игрока из модуля question
+from question import show_question, get_choice
+# Берём функцию обработки ответа из модуля answer
+from answer import process_answer
+# Берём функцию показа итогов из модуля results
+from results import show_results
 
 
-def show_rules():
-    print("=" * 50)
-    print("   КИБЕРДЕТЕКТИВ: Распознай скам!")
-    print("=" * 50)
-    print()
-    print("Тебе будут показаны сообщения из интернета.")
-    print("Определи: это СКАМ или безопасное сообщение?")
-    print()
-    print(f"Жизни: {LIVES}  |  За правильный ответ: {POINTS} очков")
-    print()
-    print("  1 — это СКАМ")
-    print("  2 — безопасное сообщение")
-    print()
-    input("Нажми Enter, чтобы начать... ")
-
-
-def get_choice():
-    while True:
-        answer = input("Твой ответ (1 или 2): ").strip()
-        if answer == "1":
-            return True
-        elif answer == "2":
-            return False
-        else:
-            print("Введи 1 или 2.")
-
-
-def final_title(score, total):
-    percent = score / (total * POINTS)
-    if percent >= 0.8:
-        return "КИБЕРДЕТЕКТИВ — отличный результат!"
-    elif percent >= 0.5:
-        return "ОСТОРОЖНЫЙ ПОЛЬЗОВАТЕЛЬ — неплохо, но есть куда расти."
-    else:
-        return "НОВИЧОК — не расстраивайся, теперь ты знаешь больше!"
-
-
-def play():
-    show_rules()
-
+# Функция запускает основной игровой цикл и возвращает итоговые результаты
+def game_loop():
+    # Копируем список вопросов через [:] — чтобы не менять оригинальный список в data.py
     shuffled = data.cases[:]
+    # Перемешиваем вопросы случайным образом — каждый раз порядок будет разным
     random.shuffle(shuffled)
+    # Запоминаем общее количество вопросов, чтобы не считать его каждый раз заново
+    total = len(shuffled)
+    # Задаём начальные значения: жизни берём из константы, очки и правильные ответы = 0
+    lives, score, correct = LIVES, 0, 0
+    # Счётчик номера текущего вопроса — начинаем с 0, увеличиваем перед каждым вопросом
+    question_num = 0
 
-    lives = LIVES
-    score = 0
-    correct = 0
-
-    for i, case in enumerate(shuffled, 1):
-        print()
-        print("=" * 50)
-        print(f"Вопрос {i}/{len(shuffled)}  |  Жизни: {lives}  |  Счёт: {score}")
-        print("=" * 50)
-        print()
-        print("Сообщение:")
-        print(f"  {case['text']}")
-        print()
-
+    # Перебираем каждый вопрос из перемешанного списка по одному
+    for case in shuffled:
+        question_num += 1  # увеличиваем номер вопроса на 1 перед его показом
+        # Показываем вопрос игроку: номер, текст, текущие жизни и счёт
+        show_question(question_num, case, total, lives, score)
+        # Получаем ответ игрока: True — скам, False — безопасно
         player = get_choice()
+        # Проверяем ответ и получаем обновлённые жизни, очки и счётчик правильных ответов
+        lives, score, correct = process_answer(player, case, lives, score, correct)
 
-        if player == case["is_scam"]:
-            print("ПРАВИЛЬНО!")
-            score += POINTS
-            correct += 1
-        else:
-            lives -= 1
-            print("НЕПРАВИЛЬНО!")
-
-        print()
-        print("Объяснение:", case["explanation"])
-        print()
-
+        # Если жизней не осталось — игра заканчивается досрочно
         if lives == 0:
-            print("Жизни закончились! Игра окончена.")
-            break
+            print('Жизни закончились! Игра окончена.')
+            break  # выходим из цикла, больше вопросов не показываем
 
-        input("Нажми Enter, чтобы продолжить... ")
+        # Ждём, пока игрок нажмёт Enter, прежде чем перейти к следующему вопросу
+        input('Нажми Enter, чтобы продолжить... ')
 
-    print()
-    print("=" * 50)
-    print("           ИТОГ")
-    print("=" * 50)
-    print(f"Правильных ответов: {correct} из {len(shuffled)}")
-    print(f"Итоговый счёт:      {score} очков")
-    print(f"Оставшиеся жизни:   {lives}")
-    print()
-    print(final_title(score, len(shuffled)))
-    print()
-    print("Главные признаки скама:")
-    print("  - просят пароль или код подтверждения")
-    print("  - слишком выгодное предложение (бесплатный приз)")
-    print("  - искусственная срочность (только сейчас!)")
-    print("  - подозрительные ссылки на незнакомые сайты")
-    print("  - просят данные карты или CVV")
-    print()
+    # Возвращаем все итоговые данные: правильные ответы, очки, жизни, всего вопросов
+    return correct, score, lives, total
 
 
+# Главная функция игры — запускает все этапы по порядку
+def play():
+    # Показываем правила и ждём готовности игрока
+    show_rules()
+    # Запускаем игровой цикл и получаем результаты
+    correct, score, lives, total = game_loop()
+    # Показываем итоговый экран с результатами
+    show_results(correct, score, lives, total)
+
+
+# Запускаем игру — эта строка вызывает play() при старте программы
 play()
